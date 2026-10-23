@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Monitor — Miryang & Arirang</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root{--bg:#13112b;--gold:#e8b941;--gold2:#f6d77a;--ink:#1d1a33}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -22,7 +21,7 @@
   .side{padding:48px 40px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;background:rgba(0,0,0,.35);text-align:center}
   .side h2{font-size:30px;font-weight:900;color:var(--gold2)}
   .side .qr{background:#fff;padding:18px;border-radius:24px}
-  .side .qr img,.side .qr canvas{width:280px!important;height:280px!important}
+  .side .qr img{width:300px;height:300px;display:block;object-fit:contain}
   .side .remain{width:100%;display:flex;flex-direction:column;gap:10px}
   .side .remain div{display:flex;justify-content:space-between;background:rgba(255,255,255,.08);border-radius:12px;padding:12px 16px;font-size:20px;font-weight:700}
   .side .remain b{color:var(--gold)}
@@ -48,7 +47,7 @@
   <div class="slide" id="slide"><div class="cap"><h1 id="cap-t"></h1><p id="cap-b"></p></div></div>
   <div class="side">
     <h2 id="title">Miryang & Arirang</h2>
-    <div class="qr" id="qr"></div>
+    <div class="qr"><img id="qr" src="img/qr.png" alt="QR"></div>
     <p class="hint">Scan · Quiz · Spin<br><span style="color:var(--gold2)">Skanerlang · Viktorina · Aylantiring</span></p>
     <div class="remain" id="remain"></div>
   </div>
@@ -76,7 +75,6 @@ async function poll(){
     const r = await uzRpc('uz_monitor_latest', { p_after_id: lastId });
     showSec = r.show_seconds || 10;
     $('#title').textContent = r.title_en + ' · ' + r.title_uz;
-    if (!qrDone && r.participant_url) { qrDone = true; try { new QRCode($('#qr'), { text: r.participant_url, width: 280, height: 280, correctLevel: QRCode.CorrectLevel.M }); } catch(e) { $('#qr').textContent = r.participant_url; } }
     if (!cards.length && r.cards.length) { cards = r.cards; buildSlides(); }
     $('#remain').innerHTML = r.remaining.map(p => `<div><span>${p.name_en}</span><b>${p.remaining} / ${p.total}</b></div>`).join('');
     // 첫 폴링에서는 이전 당첨을 재생하지 않음 (max_id로 건너뜀)
