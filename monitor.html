@@ -55,7 +55,7 @@
 </div>
 <div id="win">
   <div class="congrats">🎉 Congratulations! <small>Tabriklaymiz!</small></div>
-  <img id="win-img" src="" alt="">
+  <img id="win-img" src="" alt="" onerror="this.style.visibility='hidden'" onload="this.style.visibility='visible'">
   <div class="name" id="win-name"></div>
   <div class="confetti" id="confetti"></div>
 </div>
@@ -66,7 +66,10 @@
 <script>
 const $ = s => document.querySelector(s);
 const COLORS = ['#e8b941','#2f6fcf','#d9433f','#2e9e6b','#f6d77a','#8a5cd6','#fff'];
-let lastId = 0, queue = [], showing = false, showSec = 10, cards = [], slideIdx = 0, qrDone = false;
+let lastId = 0, queue = [], showing = false, showSec = 10, cards = [], slideIdx = 0, qrDone = false, offline = 0;
+// 화면 보호기·절전 방지 (브라우저가 지원하면)
+async function keepAwake(){ try { if (navigator.wakeLock) { const l = await navigator.wakeLock.request('screen'); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') navigator.wakeLock.request('screen').catch(()=>{}); }); } } catch(e){} }
+document.addEventListener('click', keepAwake, { once: true });
 
 async function poll(){
   try {
@@ -80,7 +83,8 @@ async function poll(){
     if (lastId === 0) lastId = r.max_id; else { r.wins.forEach(w => queue.push(w)); lastId = Math.max(lastId, r.max_id); }
     $('#status').textContent = 'online · ' + new Date().toLocaleTimeString();
     if (!showing && queue.length) showNext();
-  } catch (e) { $('#status').textContent = 'offline: ' + e.message; }
+  } catch (e) { $('#status').textContent = 'offline: ' + e.message; offline++; if (offline === 5) $('#status').style.opacity = 1; return; }
+  offline = 0; $('#status').style.opacity = .35;
 }
 function showNext(){
   const w = queue.shift(); if (!w) { showing = false; return; }
@@ -88,7 +92,9 @@ function showNext(){
   $('#win-img').src = w.image_url; $('#win-name').innerHTML = `${w.name_en}<small>${w.name_uz}</small>`;
   $('#win').classList.add('on'); confetti();
   try { new Audio('img/win.mp3').play().catch(()=>{}); } catch(e){}
-  setTimeout(() => { $('#win').classList.remove('on'); showNext(); }, showSec * 1000);
+  // 당첨이 몰리면 대기 줄이 길어지지 않게 표시 시간을 절반(최소 4초)으로
+  const sec = queue.length > 0 ? Math.max(4, Math.round(showSec / 2)) : showSec;
+  setTimeout(() => { $('#win').classList.remove('on'); showNext(); }, sec * 1000);
 }
 function confetti(){ const c=$('#confetti'); c.innerHTML=''; for(let i=0;i<160;i++){ const e=document.createElement('i'); e.style.left=Math.random()*100+'vw'; e.style.background=COLORS[i%COLORS.length]; e.style.animationDuration=(3+Math.random()*3)+'s'; e.style.animationDelay=(Math.random()*1.5)+'s'; c.appendChild(e);} }
 function buildSlides(){

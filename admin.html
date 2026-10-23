@@ -76,10 +76,14 @@
         <div><label>행사명 (EN)</label><input id="st-title-en"></div>
         <div><label>행사명 (UZ)</label><input id="st-title-uz"></div>
         <div style="grid-column:1/-1"><label>참가자 페이지 주소 (모니터 QR용)</label><input id="st-url" placeholder="https://..."></div>
-        <div><label>관리자 PIN 변경 (비우면 유지)</label><input id="st-pin" type="password" placeholder="새 PIN 4자리 이상"></div>
+        <div><label>관리자 PIN 변경 (비우면 유지)</label><input id="st-pin" type="password" placeholder="새 PIN 6자리 이상"></div>
+        <div><label>1분당 새 참가자 상한 (봇 방지)</label><input id="st-rate-start" type="number" min="1"></div>
+        <div><label>1분당 룰렛 상한 (봇 방지)</label><input id="st-rate-spin" type="number" min="1"></div>
+        <div><label>시작→룰렛 최소 소요 초 (봇 방지)</label><input id="st-minsec" type="number" min="0"></div>
       </div>
       <button onclick="saveSettings()">설정 저장</button>
-      <p class="muted" style="margin-top:10px">당첨 배출: 남은 경품 ÷ (예상 참가자 − 현재 참여자)로 매 회 자동 조절됩니다. 예상 500명·경품 120개면 평균 24%로 시작해 경품이 하루 안에 고르게 소진되고, 500명을 넘으면 남은 경품을 전부 배출합니다.</p>
+      <p class="muted" style="margin-top:10px">봇 방지 상한은 현장 속도에 맞춰 조정하세요(500명/8시간이면 분당 1~2명, 몰릴 때 20명 정도). 상한에 걸리면 참가자에게 "잠시 후 다시" 안내가 뜹니다.</p>
+      <p class="muted" style="margin-top:6px">당첨 배출: 남은 경품 ÷ (예상 참가자 − 현재 참여자)로 매 회 자동 조절됩니다. 예상 500명·경품 120개면 평균 24%로 시작해 경품이 하루 안에 고르게 소진되고, 500명을 넘으면 남은 경품을 전부 배출합니다.</p>
     </div></div>
 
     <div class="panel" id="p-prizes"><div id="list-prizes"></div><button class="sec" onclick="addRow('prizes')">+ 경품 추가</button></div>
@@ -107,7 +111,7 @@ const toast = m => { const e=$('#toast'); e.textContent=m; e.classList.add('on')
 const rpc = (fn, args) => uzRpc(fn, Object.assign({ p_pin: PIN }, args||{}));
 const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 
-async function login(){ PIN = $('#pin').value.trim(); try { await load(); sessionStorage.setItem('uz_pin', PIN); } catch(e){ toast('PIN이 틀렸거나 연결 오류: ' + e.message); } }
+async function login(){ PIN = $('#pin').value.trim(); try { await load(); sessionStorage.setItem('uz_pin', PIN); } catch(e){ toast(e.message==='INVALID_PIN' ? 'PIN이 틀렸습니다 (10회 연속 실패 시 15분 잠금)' : '연결 오류: ' + e.message); } }
 async function load(){
   D = await rpc('uz_admin_get');
   $('#login').style.display='none'; $('#main').style.display='block';
@@ -130,10 +134,13 @@ function renderSettings(){
   const s = D.settings;
   $('#st-enabled').value = String(s.enabled); $('#st-expected').value = s.expected_participants; $('#st-show').value = s.monitor_show_seconds;
   $('#st-survey').value = String(s.survey_required); $('#st-title-en').value = s.event_title_en; $('#st-title-uz').value = s.event_title_uz; $('#st-url').value = s.participant_url;
+  $('#st-rate-start').value = s.start_rate_per_min ?? 40; $('#st-rate-spin').value = s.spin_rate_per_min ?? 40; $('#st-minsec').value = s.min_seconds_to_spin ?? 20;
 }
 async function saveSettings(){
   const o = { enabled: $('#st-enabled').value==='true', expected_participants: +$('#st-expected').value, monitor_show_seconds: +$('#st-show').value,
-    survey_required: $('#st-survey').value==='true', event_title_en: $('#st-title-en').value, event_title_uz: $('#st-title-uz').value, participant_url: $('#st-url').value };
+    survey_required: $('#st-survey').value==='true', event_title_en: $('#st-title-en').value, event_title_uz: $('#st-title-uz').value, participant_url: $('#st-url').value,
+    start_rate_per_min: +$('#st-rate-start').value, spin_rate_per_min: +$('#st-rate-spin').value, min_seconds_to_spin: +$('#st-minsec').value };
+  if (!(o.expected_participants > 0) || !(o.monitor_show_seconds >= 3)) return toast('예상 참가자 수·표시 시간을 확인하세요');
   const np = $('#st-pin').value.trim(); if (np) o.admin_pin = np;
   try { await rpc('uz_admin_save_settings', { p_settings: o }); if (np) { PIN = np; sessionStorage.setItem('uz_pin', PIN); } $('#st-pin').value=''; toast('저장됨'); load(); } catch(e){ toast('오류: '+e.message); }
 }
