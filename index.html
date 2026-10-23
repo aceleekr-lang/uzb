@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Miryang & Arirang</title>
+<meta property="og:title" content="Miryang & Arirang Quiz Event">
+<meta property="og:image" content="img/og.jpg">
+<link rel="icon" href="img/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#13112b; --bg2:#1f1b45; --card:#fffdf7; --ink:#1d1a33; --muted:#6b6880;
+    --gold:#e8b941; --gold2:#f6d77a; --red:#d9433f; --blue:#2f6fcf; --ok:#2e9e6b;
+    --radius:20px; --shadow:0 12px 32px rgba(0,0,0,.25);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:Nunito,system-ui,sans-serif;background:radial-gradient(1200px 600px at 50% -10%,#3a2f7a 0%,var(--bg) 60%);color:#fff;-webkit-font-smoothing:antialiased}
+  .app{max-width:480px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding:16px 16px 24px}
+  header{display:flex;align-items:center;justify-content:space-between;padding:6px 2px 14px}
+  header .brand{font-weight:900;font-size:15px;letter-spacing:.3px;color:var(--gold2)}
+  header .lang{display:flex;gap:6px}
+  header .lang button{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:999px;padding:5px 10px;font:inherit;font-weight:700;font-size:12px}
+  header .lang button.on{background:var(--gold);border-color:var(--gold);color:#1d1a33}
+  .screen{display:none;flex:1;flex-direction:column}
+  .screen.on{display:flex}
+  .card{background:var(--card);color:var(--ink);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .card .img{width:100%;aspect-ratio:4/3;object-fit:cover;background:#ddd;display:block}
+  .card .body{padding:18px 18px 20px}
+  h1{font-size:26px;line-height:1.15;font-weight:900}
+  h2{font-size:20px;line-height:1.2;font-weight:900}
+  p{line-height:1.5}
+  .muted{color:var(--muted);font-size:14px}
+  .btn{display:block;width:100%;border:0;border-radius:14px;padding:16px;font:inherit;font-weight:900;font-size:17px;cursor:pointer;background:var(--gold);color:#1d1a33;box-shadow:0 6px 0 #b98a1f;transition:transform .05s}
+  .btn:active{transform:translateY(3px);box-shadow:0 3px 0 #b98a1f}
+  .btn:disabled{opacity:.5;box-shadow:none;transform:none}
+  .btn.ghost{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5);box-shadow:none}
+  .stack{display:flex;flex-direction:column;gap:12px}
+  .center{text-align:center}
+  .spacer{flex:1}
+  .dots{display:flex;gap:6px;justify-content:center;margin:14px 0 6px}
+  .dots i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3)}
+  .dots i.on{background:var(--gold)}
+  .step{font-size:12px;font-weight:700;letter-spacing:1px;color:var(--gold2);text-transform:uppercase;margin-bottom:8px}
+  /* quiz / survey */
+  .q{background:var(--card);color:var(--ink);border-radius:var(--radius);padding:18px;margin-bottom:12px;box-shadow:var(--shadow)}
+  .q h3{font-size:17px;margin-bottom:12px;line-height:1.3}
+  .opt{display:block;width:100%;text-align:left;border:2px solid #e6e2d6;background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px;font:inherit;font-size:15px;font-weight:700;color:var(--ink);cursor:pointer}
+  .opt.sel{border-color:var(--blue);background:#eaf1ff}
+  .q.wrong{outline:3px solid var(--red)}
+  .q.wrong h3::after{content:" ✗";color:var(--red)}
+  .q textarea{width:100%;border:2px solid #e6e2d6;border-radius:12px;padding:12px;font:inherit;font-size:15px;min-height:70px}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#fff;color:var(--ink);padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
+  .toast.on{opacity:1}
+  /* wheel */
+  .wheelwrap{position:relative;width:min(84vw,340px);margin:10px auto 18px}
+  .wheelwrap canvas{width:100%;height:auto;display:block;border-radius:50%;box-shadow:0 0 0 8px #fff,0 0 0 12px var(--gold),0 20px 50px rgba(0,0,0,.45)}
+  .pin{position:absolute;top:-14px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:34px solid var(--red);filter:drop-shadow(0 3px 2px rgba(0,0,0,.4));z-index:2}
+  .pin::after{content:"";position:absolute;left:-7px;top:-40px;width:14px;height:14px;border-radius:50%;background:var(--red)}
+  .hub{position:absolute;left:50%;top:50%;width:54px;height:54px;transform:translate(-50%,-50%);border-radius:50%;background:#fff;border:5px solid var(--gold);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;color:var(--ink)}
+  .ticket{background:linear-gradient(135deg,#fff3c4,#ffe08a);color:#5a3f00;border-radius:16px;padding:16px;text-align:center;font-weight:900;border:2px dashed #c9961f;margin-bottom:14px}
+  /* result */
+  .prize{width:200px;height:200px;object-fit:contain;margin:6px auto 10px;display:block;filter:drop-shadow(0 10px 20px rgba(0,0,0,.35))}
+  .big{font-size:30px;font-weight:900;color:var(--gold2);line-height:1.1}
+  .code{font-family:ui-monospace,monospace;font-size:11px;opacity:.55;text-align:center;margin-top:10px;word-break:break-all}
+  .confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9}
+  .confetti i{position:absolute;top:-12px;width:10px;height:14px;opacity:.9;animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+  .err{background:#fde8e7;color:#8a1f1b;border-radius:12px;padding:12px;font-weight:700;font-size:14px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand" id="brand">MIRYANG · ARIRANG</div>
+    <div class="lang"><button data-lang="en">EN</button><button data-lang="uz">UZ</button></div>
+  </header>
+
+  <!-- 0. 언어 선택 / 시작 -->
+  <section class="screen on" id="s-lang">
+    <div class="card"><img class="img" src="img/hero.jpg" alt=""><div class="body">
+      <h1 id="t-title">Miryang & Arirang</h1>
+      <p class="muted" style="margin-top:6px">Quiz · Survey · Lucky Roulette</p>
+    </div></div>
+    <div class="spacer"></div>
+    <div class="stack">
+      <button class="btn" onclick="setLang('en');go('intro')">Start in English</button>
+      <button class="btn" onclick="setLang('uz');go('intro')">O'zbek tilida boshlash</button>
+    </div>
+  </section>
+
+  <!-- 1. 소개 카드 4장 -->
+  <section class="screen" id="s-intro">
+    <div class="step"><span data-i="step_intro"></span> <span id="intro-n"></span>/<span id="intro-total"></span></div>
+    <div class="card" id="intro-card"><img class="img" id="intro-img" alt=""><div class="body"><h2 id="intro-title"></h2><p id="intro-body" style="margin-top:8px"></p></div></div>
+    <div class="dots" id="intro-dots"></div>
+    <div class="spacer"></div>
+    <button class="btn" id="intro-next" onclick="introNext()"></button>
+  </section>
+
+  <!-- 2. 퀴즈 -->
+  <section class="screen" id="s-quiz">
+    <div class="step" data-i="step_quiz"></div>
+    <h2 data-i="quiz_title" style="margin-bottom:12px"></h2>
+    <div id="quiz-list"></div>
+    <button class="btn" id="quiz-submit" onclick="submitQuiz()"></button>
+  </section>
+
+  <!-- 3. 설문 -->
+  <section class="screen" id="s-survey">
+    <div class="step" data-i="step_survey"></div>
+    <h2 data-i="survey_title" style="margin-bottom:4px"></h2>
+    <p class="muted" data-i="survey_sub" style="margin-bottom:12px;color:#cfcbe6"></p>
+    <div id="survey-list"></div>
+    <button class="btn" id="survey-submit" onclick="submitSurvey()"></button>
+  </section>
+
+  <!-- 4. 룰렛 -->
+  <section class="screen" id="s-spin">
+    <div class="ticket">🎟 <span data-i="ticket"></span></div>
+    <div class="wheelwrap"><div class="pin"></div><canvas id="wheel" width="680" height="680"></canvas><div class="hub">SPIN</div></div>
+    <div class="spacer"></div>
+    <button class="btn" id="spin-btn" onclick="spin()"></button>
+  </section>
+
+  <!-- 5. 결과 -->
+  <section class="screen" id="s-result">
+    <div class="spacer"></div>
+    <div class="center" id="result-box"></div>
+    <div class="spacer"></div>
+    <p class="muted center" data-i="footer" style="color:#cfcbe6"></p>
+    <div class="code" id="mycode"></div>
+  </section>
+
+  <!-- 닫힘/오류 -->
+  <section class="screen" id="s-msg"><div class="spacer"></div><div class="card"><div class="body center"><h2 id="msg-text"></h2></div></div><div class="spacer"></div></section>
+</div>
+<div class="toast" id="toast"></div>
+<div class="confetti" id="confetti"></div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script>
+const I18N = {
+  en: { step_intro:"About Miryang", step_quiz:"Quick quiz", step_survey:"Short survey", next:"Next", go_quiz:"Go to the quiz →",
+        quiz_title:"Answer 4 easy questions", submit:"Submit", correct:"Correct! 🎉", wrong:"Check the marked questions and try again",
+        survey_title:"Tell us a little about you", survey_sub:"4 quick questions. Then spin the roulette!", survey_submit:"Get my roulette ticket →",
+        fill_all:"Please answer every question", ticket:"You got a roulette ticket!", spin:"SPIN THE ROULETTE", spinning:"Spinning…",
+        win:"Congratulations!", win_sub:"Show this screen at the booth to receive your gift.", lose:"Thank you for playing!", lose_sub:"Sorry, no prize this time — but thank you for learning about Miryang!",
+        already:"This phone has already joined. Thank you!", closed:"The event is not open right now.", footer:"Miryang City · Miryang Cultural Tourism Foundation", err:"Connection error. Please try again." },
+  uz: { step_intro:"Miryang haqida", step_quiz:"Tezkor viktorina", step_survey:"Qisqa so'rovnoma", next:"Keyingi", go_quiz:"Viktorinaga o'tish →",
+        quiz_title:"4 ta oson savolga javob bering", submit:"Yuborish", correct:"To'g'ri! 🎉", wrong:"Belgilangan savollarni tekshirib, yana urinib ko'ring",
+        survey_title:"O'zingiz haqingizda qisqacha", survey_sub:"4 ta qisqa savol. So'ng ruletkani aylantiring!", survey_submit:"Ruletka chiptasini olish →",
+        fill_all:"Iltimos, barcha savollarga javob bering", ticket:"Siz ruletka chiptasini oldingiz!", spin:"RULETKANI AYLANTIRING", spinning:"Aylanmoqda…",
+        win:"Tabriklaymiz!", win_sub:"Sovg'angizni olish uchun bu ekranni stendda ko'rsating.", lose:"Ishtirokingiz uchun rahmat!", lose_sub:"Afsuski, bu safar sovg'a chiqmadi — Miryang bilan tanishganingiz uchun rahmat!",
+        already:"Bu telefon allaqachon ishtirok etgan. Rahmat!", closed:"Tadbir hozir ochiq emas.", footer:"Miryang shahri · Miryang madaniyat va turizm jamg'armasi", err:"Ulanish xatosi. Qayta urinib ko'ring." }
+};
+let lang = 'en', cfg = null, status = null, introIdx = 0;
+const token = uzToken();
+const $ = s => document.querySelector(s);
+const t = k => (I18N[lang][k] || k);
+const L = (o, k) => o[k + '_' + lang] || o[k + '_en'];
+
+function setLang(l){ lang = l; document.documentElement.lang = l;
+  document.querySelectorAll('header .lang button').forEach(b => b.classList.toggle('on', b.dataset.lang === l));
+  document.querySelectorAll('[data-i]').forEach(e => e.textContent = t(e.dataset.i));
+  if (cfg) { $('#brand').textContent = L(cfg,'title'); renderIntro(); renderQuiz(); renderSurvey(); }
+  $('#intro-next').textContent = t('next'); $('#quiz-submit').textContent = t('submit');
+  $('#survey-submit').textContent = t('survey_submit'); $('#spin-btn').textContent = t('spin');
+  if (status) uzRpc('uz_start', { p_token: token, p_lang: lang }).catch(()=>{});
+  if ($('#s-result').classList.contains('on')) renderResult();
+}
+document.querySelectorAll('header .lang button').forEach(b => b.onclick = () => setLang(b.dataset.lang));
+function go(id){ document.querySelectorAll('.screen').forEach(s => s.classList.remove('on')); $('#s-'+id).classList.add('on'); window.scrollTo(0,0); }
+function toast(m){ const e = $('#toast'); e.textContent = m; e.classList.add('on'); clearTimeout(e._t); e._t = setTimeout(()=>e.classList.remove('on'), 2200); }
+function msg(m){ $('#msg-text').textContent = m; go('msg'); }
+
+// ---------- 초기화 ----------
+(async function init(){
+  try {
+    cfg = await uzRpc('uz_public_config', {});
+    if (!cfg.enabled) return msg(t('closed'));
+    status = await uzRpc('uz_start', { p_token: token, p_lang: lang });
+    setLang(lang);
+    drawWheel();
+    if (status.state === 'done') { renderResult(); go('result'); }
+    else if (status.state === 'spin') go('spin');
+    else if (status.state === 'survey') go('survey');
+    else if (status.state === 'quiz' && sessionStorage.getItem('uz_seen_intro')) go('quiz');
+    // 그 외: 언어 선택 화면 유지
+  } catch (e) { msg(t('err') + ' (' + e.message + ')'); }
+})();
+
+// ---------- 소개 카드 ----------
+function renderIntro(){
+  const c = cfg.cards[introIdx]; if (!c) return;
+  $('#intro-img').src = c.image_url; $('#intro-title').textContent = L(c,'title'); $('#intro-body').textContent = L(c,'body');
+  $('#intro-n').textContent = introIdx+1; $('#intro-total').textContent = cfg.cards.length;
+  $('#intro-dots').innerHTML = cfg.cards.map((_,i)=>`<i class="${i===introIdx?'on':''}"></i>`).join('');
+  $('#intro-next').textContent = introIdx === cfg.cards.length-1 ? t('go_quiz') : t('next');
+}
+function introNext(){ if (introIdx < cfg.cards.length-1) { introIdx++; renderIntro(); } else { sessionStorage.setItem('uz_seen_intro','1'); go('quiz'); } }
+
+// ---------- 퀴즈 ----------
+const quizSel = {};
+function renderQuiz(){
+  $('#quiz-list').innerHTML = cfg.quiz.map((q,i)=>`<div class="q" id="q${q.id}"><h3>${i+1}. ${L(q,'question')}</h3>${L(q,'options').map((o,j)=>`<button class="opt ${quizSel[q.id]===j?'sel':''}" onclick="pickQuiz(${q.id},${j})">${o}</button>`).join('')}</div>`).join('');
+}
+function pickQuiz(id,j){ quizSel[id]=j; const q=$('#q'+id); q.classList.remove('wrong'); q.querySelectorAll('.opt').forEach((b,k)=>b.classList.toggle('sel',k===j)); }
+async function submitQuiz(){
+  if (Object.keys(quizSel).length < cfg.quiz.length) return toast(t('fill_all'));
+  const btn = $('#quiz-submit'); btn.disabled = true;
+  try {
+    const r = await uzRpc('uz_submit_quiz', { p_token: token, p_answers: cfg.quiz.map(q=>({id:q.id, idx:quizSel[q.id]})) });
+    if (r.passed) { toast(t('correct')); setTimeout(()=>go(r.state === 'survey' ? 'survey' : 'spin'), 700); }
+    else { (r.wrong_ids||[]).forEach(id => $('#q'+id).classList.add('wrong')); toast(t('wrong')); }
+  } catch(e){ toast(t('err')); } finally { btn.disabled = false; }
+}
+
+// ---------- 설문 ----------
+const svSel = {};
+function renderSurvey(){
+  $('#survey-list').innerHTML = cfg.survey.map((q,i)=>`<div class="q" id="sv${q.id}"><h3>${i+1}. ${L(q,'question')}</h3>${
+    q.qtype === 'text' ? `<textarea oninput="svSel[${q.id}]=this.value"></textarea>` :
+    L(q,'options').map((o,j)=>`<button class="opt ${svSel[q.id]===o?'sel':''}" onclick="pickSv(${q.id},this,'${o.replace(/'/g,"\\'")}')">${o}</button>`).join('')}</div>`).join('');
+}
+function pickSv(id,el,v){ svSel[id]=v; el.parentElement.querySelectorAll('.opt').forEach(b=>b.classList.toggle('sel',b===el)); }
+async function submitSurvey(){
+  if (cfg.survey.some(q => !svSel[q.id])) return toast(t('fill_all'));
+  const btn = $('#survey-submit'); btn.disabled = true;
+  try { await uzRpc('uz_submit_survey', { p_token: token, p_answers: cfg.survey.map(q=>({id:q.id, answer:svSel[q.id]})) }); go('spin'); }
+  catch(e){ toast(t('err')); } finally { btn.disabled = false; }
+}
+
+// ---------- 룰렛 ----------
+// 칸 구성(보이는 것만, 결과는 서버 결정): 경품 3종 + 꽝 3칸
+let SEG = [];
+const COLORS = ['#e8b941','#2f6fcf','#d9433f','#2e9e6b','#f6d77a','#8a5cd6'];
+function buildSegments(){
+  const prizes = cfg.prizes; SEG = [];
+  prizes.forEach((p,i)=>{ SEG.push({code:p.code, label:L(p,'name')}); SEG.push({code:null, label: lang==='uz' ? 'Yana bir bor' : 'Try again'}); });
+  if (SEG.length < 4) SEG.push({code:null,label:'—'});
+}
+let angle = 0;
+function drawWheel(){
+  buildSegments();
+  const cv = $('#wheel'), ctx = cv.getContext('2d'), n = SEG.length, R = cv.width/2, a = 2*Math.PI/n;
+  ctx.clearRect(0,0,cv.width,cv.height); ctx.save(); ctx.translate(R,R); ctx.rotate(angle);
+  SEG.forEach((s,i)=>{
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,R-4,i*a - Math.PI/2, (i+1)*a - Math.PI/2); ctx.closePath();
+    ctx.fillStyle = s.code ? COLORS[i%COLORS.length] : '#f3efe4'; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=4; ctx.stroke();
+    ctx.save(); ctx.rotate(i*a + a/2 - Math.PI/2); ctx.textAlign='right'; ctx.fillStyle = s.code ? '#fff' : '#8a8699';
+    ctx.font = (s.code ? '900 ' : '700 ') + (s.label.length > 18 ? '22px' : '28px') + ' Nunito, sans-serif';
+    wrap(ctx, s.label, R-30, 0, 180, 30); ctx.restore();
+  });
+  ctx.restore();
+}
+function wrap(ctx, text, x, y, maxW, lh){ const words = text.split(' '); let line='', lines=[]; words.forEach(w=>{ const tl=(line+' '+w).trim(); if (ctx.measureText(tl).width>maxW && line){ lines.push(line); line=w; } else line=tl; }); lines.push(line); const y0 = y - (lines.length-1)*lh/2; lines.forEach((l,i)=>ctx.fillText(l, x, y0+i*lh+10)); }
+
+async function spin(){
+  const btn = $('#spin-btn'); btn.disabled = true; btn.textContent = t('spinning');
+  let r;
+  try { r = await uzRpc('uz_spin', { p_token: token }); }
+  catch(e){ toast(t('err')); btn.disabled=false; btn.textContent=t('spin'); return; }
+  status = r;
+  const code = r.prize ? r.prize.code : null;
+  const cands = SEG.map((s,i)=>s.code===code?i:-1).filter(i=>i>=0);
+  const target = cands[Math.floor(Math.random()*cands.length)];
+  const n = SEG.length, a = 2*Math.PI/n;
+  // 핀은 12시 방향. target 칸의 중앙이 12시에 오도록: angle = -(target*a + a/2) + 랜덤 흔들림
+  const jitter = (Math.random()-0.5) * a * 0.7;
+  const final = -(target*a + a/2) + jitter;
+  const turns = 6;
+  const start = angle % (2*Math.PI), total = (2*Math.PI*turns) + ((final - start) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI);
+  const dur = 5200, t0 = performance.now();
+  (function frame(now){
+    const p = Math.min(1,(now-t0)/dur), ease = 1 - Math.pow(1-p, 4);
+    angle = start + total*ease; drawWheel();
+    if (p < 1) requestAnimationFrame(frame); else setTimeout(()=>{ renderResult(); go('result'); if (code) confetti(); }, 500);
+  })(t0);
+}
+
+// ---------- 결과 ----------
+function renderResult(){
+  const p = status && status.prize;
+  $('#mycode').textContent = 'ID ' + token.slice(0,8);
+  $('#result-box').innerHTML = p
+    ? `<div class="big">${t('win')}</div><img class="prize" src="${p.image_url}" alt=""><h2>${L(p,'name')}</h2><p style="margin-top:10px;color:#cfcbe6">${t('win_sub')}</p>`
+    : `<img class="prize" src="img/thankyou.png" alt="" onerror="this.style.display='none'"><div class="big">${t('lose')}</div><p style="margin-top:10px;color:#cfcbe6">${t('lose_sub')}</p>`;
+}
+function confetti(){ const c=$('#confetti'); c.innerHTML=''; for(let i=0;i<90;i++){ const e=document.createElement('i'); e.style.left=Math.random()*100+'vw'; e.style.background=COLORS[i%COLORS.length]; e.style.animationDuration=(2+Math.random()*2.5)+'s'; e.style.animationDelay=(Math.random()*0.8)+'s'; e.style.transform=`rotate(${Math.random()*360}deg)`; c.appendChild(e);} setTimeout(()=>c.innerHTML='',5000); }
+</script>
+</body>
+</html>

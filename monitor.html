@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitor — Miryang & Arirang</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{--bg:#13112b;--gold:#e8b941;--gold2:#f6d77a;--ink:#1d1a33}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;cursor:none}
+  body{font-family:Nunito,system-ui,sans-serif;background:radial-gradient(1400px 800px at 50% -10%,#3a2f7a 0%,var(--bg) 60%);color:#fff}
+  /* 대기 화면: 슬라이드 + QR */
+  #idle{position:absolute;inset:0;display:grid;grid-template-columns:1fr 440px;gap:0}
+  .slide{position:relative;overflow:hidden}
+  .slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.2s}
+  .slide img.on{opacity:1}
+  .slide .cap{position:absolute;left:0;right:0;bottom:0;padding:48px 56px;background:linear-gradient(transparent,rgba(0,0,0,.8))}
+  .slide .cap h1{font-size:56px;font-weight:900;line-height:1.1;color:var(--gold2)}
+  .slide .cap p{font-size:26px;margin-top:12px;max-width:1100px;line-height:1.4}
+  .side{padding:48px 40px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;background:rgba(0,0,0,.35);text-align:center}
+  .side h2{font-size:30px;font-weight:900;color:var(--gold2)}
+  .side .qr{background:#fff;padding:18px;border-radius:24px}
+  .side .qr img,.side .qr canvas{width:280px!important;height:280px!important}
+  .side .remain{width:100%;display:flex;flex-direction:column;gap:10px}
+  .side .remain div{display:flex;justify-content:space-between;background:rgba(255,255,255,.08);border-radius:12px;padding:12px 16px;font-size:20px;font-weight:700}
+  .side .remain b{color:var(--gold)}
+  .side .hint{font-size:20px;line-height:1.4;opacity:.85}
+  /* 당첨 화면 */
+  #win{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;background:radial-gradient(900px 700px at 50% 40%,#5a3fa8 0%,#1b1640 70%);animation:pop .5s}
+  #win.on{display:flex}
+  @keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+  #win .congrats{font-size:92px;font-weight:900;color:var(--gold2);text-shadow:0 10px 40px rgba(0,0,0,.5);line-height:1}
+  #win .congrats small{display:block;font-size:44px;color:#fff;margin-top:10px;font-weight:700}
+  #win img{width:min(46vh,520px);height:min(46vh,520px);object-fit:contain;margin:34px 0 22px;filter:drop-shadow(0 20px 50px rgba(0,0,0,.5));animation:bounce 1.2s ease-in-out infinite alternate}
+  @keyframes bounce{from{transform:translateY(0) rotate(-3deg)}to{transform:translateY(-18px) rotate(3deg)}}
+  #win .name{font-size:58px;font-weight:900}
+  #win .name small{display:block;font-size:34px;font-weight:700;opacity:.9;margin-top:6px}
+  .confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .confetti i{position:absolute;top:-20px;width:16px;height:24px;animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(110vh) rotate(900deg)}}
+  #status{position:absolute;left:12px;bottom:8px;font-size:12px;opacity:.35}
+</style>
+</head>
+<body>
+<div id="idle">
+  <div class="slide" id="slide"><div class="cap"><h1 id="cap-t"></h1><p id="cap-b"></p></div></div>
+  <div class="side">
+    <h2 id="title">Miryang & Arirang</h2>
+    <div class="qr" id="qr"></div>
+    <p class="hint">Scan · Quiz · Spin<br><span style="color:var(--gold2)">Skanerlang · Viktorina · Aylantiring</span></p>
+    <div class="remain" id="remain"></div>
+  </div>
+</div>
+<div id="win">
+  <div class="congrats">🎉 Congratulations! <small>Tabriklaymiz!</small></div>
+  <img id="win-img" src="" alt="">
+  <div class="name" id="win-name"></div>
+  <div class="confetti" id="confetti"></div>
+</div>
+<div id="status"></div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const COLORS = ['#e8b941','#2f6fcf','#d9433f','#2e9e6b','#f6d77a','#8a5cd6','#fff'];
+let lastId = 0, queue = [], showing = false, showSec = 10, cards = [], slideIdx = 0, qrDone = false;
+
+async function poll(){
+  try {
+    const r = await uzRpc('uz_monitor_latest', { p_after_id: lastId });
+    showSec = r.show_seconds || 10;
+    $('#title').textContent = r.title_en + ' · ' + r.title_uz;
+    if (!qrDone && r.participant_url) { qrDone = true; try { new QRCode($('#qr'), { text: r.participant_url, width: 280, height: 280, correctLevel: QRCode.CorrectLevel.M }); } catch(e) { $('#qr').textContent = r.participant_url; } }
+    if (!cards.length && r.cards.length) { cards = r.cards; buildSlides(); }
+    $('#remain').innerHTML = r.remaining.map(p => `<div><span>${p.name_en}</span><b>${p.remaining} / ${p.total}</b></div>`).join('');
+    // 첫 폴링에서는 이전 당첨을 재생하지 않음 (max_id로 건너뜀)
+    if (lastId === 0) lastId = r.max_id; else { r.wins.forEach(w => queue.push(w)); lastId = Math.max(lastId, r.max_id); }
+    $('#status').textContent = 'online · ' + new Date().toLocaleTimeString();
+    if (!showing && queue.length) showNext();
+  } catch (e) { $('#status').textContent = 'offline: ' + e.message; }
+}
+function showNext(){
+  const w = queue.shift(); if (!w) { showing = false; return; }
+  showing = true;
+  $('#win-img').src = w.image_url; $('#win-name').innerHTML = `${w.name_en}<small>${w.name_uz}</small>`;
+  $('#win').classList.add('on'); confetti();
+  try { new Audio('img/win.mp3').play().catch(()=>{}); } catch(e){}
+  setTimeout(() => { $('#win').classList.remove('on'); showNext(); }, showSec * 1000);
+}
+function confetti(){ const c=$('#confetti'); c.innerHTML=''; for(let i=0;i<160;i++){ const e=document.createElement('i'); e.style.left=Math.random()*100+'vw'; e.style.background=COLORS[i%COLORS.length]; e.style.animationDuration=(3+Math.random()*3)+'s'; e.style.animationDelay=(Math.random()*1.5)+'s'; c.appendChild(e);} }
+function buildSlides(){
+  const s = $('#slide'); cards.forEach((c,i)=>{ const img=document.createElement('img'); img.src=c.image_url; if(i===0) img.classList.add('on'); s.insertBefore(img, s.firstChild); });
+  cap(); setInterval(()=>{ slideIdx=(slideIdx+1)%cards.length; s.querySelectorAll('img').forEach((im,i)=>im.classList.toggle('on', (cards.length-1-i)===slideIdx)); cap(); }, 8000);
+}
+function cap(){ const c = cards[slideIdx]; $('#cap-t').textContent = c.title_en + ' · ' + c.title_uz; $('#cap-b').textContent = c.body_en; }
+poll(); setInterval(poll, 2000);
+document.addEventListener('dblclick', () => document.documentElement.requestFullscreen && document.documentElement.requestFullscreen());
+</script>
+</body>
+</html>

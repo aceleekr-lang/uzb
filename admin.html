@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>관리자 — Miryang & Arirang</title>
+<meta name="robots" content="noindex">
+<style>
+  :root{--bg:#f4f3fa;--ink:#1d1a33;--line:#dcd9ea;--pri:#3b2f8f;--gold:#e8b941;--red:#c7312d}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+  .wrap{max-width:1000px;margin:0 auto;padding:16px}
+  h1{font-size:20px;margin-bottom:10px}
+  h2{font-size:16px;margin:18px 0 8px}
+  .login{max-width:360px;margin:80px auto;background:#fff;padding:24px;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.08)}
+  input,select,textarea{font:inherit;border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;background:#fff}
+  textarea{min-height:60px}
+  button{font:inherit;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;background:var(--pri);color:#fff;font-weight:700}
+  button.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  button.danger{background:var(--red)}
+  button:disabled{opacity:.5}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px}
+  .tabs button{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .tabs button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+  .panel{display:none}.panel.on{display:block}
+  .card{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .stat{background:#fff;border-radius:12px;padding:14px;text-align:center}
+  .stat b{display:block;font-size:26px;color:var(--pri)}
+  .stat span{font-size:12px;color:#777}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+  th{background:#faf9ff;font-weight:700}
+  .row{display:grid;gap:8px;margin-bottom:10px}
+  .row label{font-size:12px;color:#666;display:block;margin-bottom:3px}
+  .item{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:#fff}
+  .item .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .muted{color:#777;font-size:12px}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1d1a33;color:#fff;padding:10px 16px;border-radius:999px;opacity:0;transition:.2s;pointer-events:none}
+  .toast.on{opacity:1}
+  .bar{height:8px;background:#eee;border-radius:4px;overflow:hidden}.bar i{display:block;height:100%;background:var(--gold)}
+  @media(max-width:640px){.two,.three{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="login" id="login">
+    <h1>관리자 로그인</h1>
+    <p class="muted" style="margin:6px 0 12px">관리자 PIN을 입력하세요.</p>
+    <input id="pin" type="password" inputmode="numeric" placeholder="PIN" onkeydown="if(event.key==='Enter')login()">
+    <button style="width:100%;margin-top:10px" onclick="login()">로그인</button>
+  </div>
+
+  <div id="main" style="display:none">
+    <h1>Miryang & Arirang 관리자 <button class="sec" style="float:right" onclick="load()">새로고침</button></h1>
+    <div class="tabs">
+      <button class="on" onclick="tab('stats',this)">현황</button><button onclick="tab('settings',this)">설정</button>
+      <button onclick="tab('prizes',this)">경품</button><button onclick="tab('cards',this)">소개 카드</button>
+      <button onclick="tab('quiz',this)">퀴즈</button><button onclick="tab('survey',this)">설문</button><button onclick="tab('tools',this)">도구</button>
+    </div>
+
+    <div class="panel on" id="p-stats">
+      <div class="grid" id="stat-grid"></div>
+      <h2>경품 현황</h2><div class="card" id="stat-prizes"></div>
+      <h2>설문 집계</h2><div class="card" id="stat-survey"></div>
+    </div>
+
+    <div class="panel" id="p-settings"><div class="card">
+      <div class="row two">
+        <div><label>행사 운영 (참여 허용)</label><select id="st-enabled"><option value="true">운영 중</option><option value="false">중지 (참여 불가)</option></select></div>
+        <div><label>예상 참가자 수 (당첨 배출 속도 기준)</label><input id="st-expected" type="number" min="1"></div>
+        <div><label>모니터 축하 화면 표시 시간(초)</label><input id="st-show" type="number" min="3"></div>
+        <div><label>설문 필수 여부</label><select id="st-survey"><option value="true">설문 후 룰렛</option><option value="false">설문 건너뜀</option></select></div>
+        <div><label>행사명 (EN)</label><input id="st-title-en"></div>
+        <div><label>행사명 (UZ)</label><input id="st-title-uz"></div>
+        <div style="grid-column:1/-1"><label>참가자 페이지 주소 (모니터 QR용)</label><input id="st-url" placeholder="https://..."></div>
+        <div><label>관리자 PIN 변경 (비우면 유지)</label><input id="st-pin" type="password" placeholder="새 PIN 4자리 이상"></div>
+      </div>
+      <button onclick="saveSettings()">설정 저장</button>
+      <p class="muted" style="margin-top:10px">당첨 배출: 남은 경품 ÷ (예상 참가자 − 현재 참여자)로 매 회 자동 조절됩니다. 예상 500명·경품 120개면 평균 24%로 시작해 경품이 하루 안에 고르게 소진되고, 500명을 넘으면 남은 경품을 전부 배출합니다.</p>
+    </div></div>
+
+    <div class="panel" id="p-prizes"><div id="list-prizes"></div><button class="sec" onclick="addRow('prizes')">+ 경품 추가</button></div>
+    <div class="panel" id="p-cards"><div id="list-cards"></div><button class="sec" onclick="addRow('cards')">+ 카드 추가</button></div>
+    <div class="panel" id="p-quiz"><div id="list-quiz"></div><button class="sec" onclick="addRow('quiz')">+ 문항 추가</button></div>
+    <div class="panel" id="p-survey"><div id="list-survey"></div><button class="sec" onclick="addRow('survey')">+ 설문 추가</button></div>
+
+    <div class="panel" id="p-tools">
+      <div class="card"><h2 style="margin-top:0">설문 원자료 내보내기</h2><button onclick="exportCsv()">CSV 다운로드</button></div>
+      <div class="card"><h2 style="margin-top:0">특정 폰 재참여 허용</h2><p class="muted">참가자 결과 화면 하단 "ID xxxxxxxx" 8자리를 입력하면 그 폰의 기록을 지워 다시 참여할 수 있게 합니다. (당첨 기록도 지워지므로 경품 지급 전에만 사용)</p>
+        <div style="display:flex;gap:8px;margin-top:8px"><input id="rel-id" placeholder="ID 8자리" style="max-width:200px"><button onclick="release()">기록 삭제</button></div></div>
+      <div class="card"><h2 style="margin-top:0;color:var(--red)">전체 초기화</h2><p class="muted">참여·추첨·설문 기록을 모두 삭제하고 경품 수량을 총량으로 되돌립니다. 리허설 후 실제 행사 시작 전에 사용하세요.</p>
+        <div style="display:flex;gap:8px;margin-top:8px"><input id="reset-confirm" placeholder="RESET 입력" style="max-width:200px"><button class="danger" onclick="resetAll()">초기화 실행</button></div></div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+let PIN = sessionStorage.getItem('uz_pin') || '', D = null;
+const toast = m => { const e=$('#toast'); e.textContent=m; e.classList.add('on'); clearTimeout(e._t); e._t=setTimeout(()=>e.classList.remove('on'),2200); };
+const rpc = (fn, args) => uzRpc(fn, Object.assign({ p_pin: PIN }, args||{}));
+const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+
+async function login(){ PIN = $('#pin').value.trim(); try { await load(); sessionStorage.setItem('uz_pin', PIN); } catch(e){ toast('PIN이 틀렸거나 연결 오류: ' + e.message); } }
+async function load(){
+  D = await rpc('uz_admin_get');
+  $('#login').style.display='none'; $('#main').style.display='block';
+  renderStats(); renderSettings(); ['prizes','cards','quiz','survey'].forEach(renderList);
+}
+if (PIN) load().catch(()=>{ PIN=''; sessionStorage.removeItem('uz_pin'); });
+function tab(id, btn){ document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on', p.id==='p-'+id)); document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on', b===btn)); }
+
+// ---- 현황 ----
+function renderStats(){
+  const s = D.stats;
+  $('#stat-grid').innerHTML = [['참여 시작',s.participants],['퀴즈 통과',s.quiz_passed],['설문 완료',s.survey_done],['룰렛 돌림',s.spun],['당첨',s.won],['최근 1시간 룰렛',s.last_hour],['EN / UZ',(s.by_lang.en||0)+' / '+(s.by_lang.uz||0)]]
+    .map(([k,v])=>`<div class="stat"><b>${v}</b><span>${k}</span></div>`).join('');
+  $('#stat-prizes').innerHTML = '<table><tr><th>경품</th><th>총량</th><th>지급</th><th>남음</th><th style="width:40%">소진</th></tr>' +
+    s.by_prize.map(p=>`<tr><td>${esc(p.name_en)}</td><td>${p.total}</td><td>${p.given}</td><td><b>${p.remaining}</b></td><td><div class="bar"><i style="width:${p.total?100*p.given/p.total:0}%"></i></div></td></tr>`).join('') + '</table>';
+  $('#stat-survey').innerHTML = s.survey_summary.map(q=>`<p style="margin:6px 0 2px"><b>${esc(q.question)}</b></p><p class="muted">${q.answers?Object.entries(q.answers).sort((a,b)=>b[1]-a[1]).map(([a,n])=>`${esc(a)} <b>${n}</b>`).join(' · '):'응답 없음'}</p>`).join('');
+}
+// ---- 설정 ----
+function renderSettings(){
+  const s = D.settings;
+  $('#st-enabled').value = String(s.enabled); $('#st-expected').value = s.expected_participants; $('#st-show').value = s.monitor_show_seconds;
+  $('#st-survey').value = String(s.survey_required); $('#st-title-en').value = s.event_title_en; $('#st-title-uz').value = s.event_title_uz; $('#st-url').value = s.participant_url;
+}
+async function saveSettings(){
+  const o = { enabled: $('#st-enabled').value==='true', expected_participants: +$('#st-expected').value, monitor_show_seconds: +$('#st-show').value,
+    survey_required: $('#st-survey').value==='true', event_title_en: $('#st-title-en').value, event_title_uz: $('#st-title-uz').value, participant_url: $('#st-url').value };
+  const np = $('#st-pin').value.trim(); if (np) o.admin_pin = np;
+  try { await rpc('uz_admin_save_settings', { p_settings: o }); if (np) { PIN = np; sessionStorage.setItem('uz_pin', PIN); } $('#st-pin').value=''; toast('저장됨'); load(); } catch(e){ toast('오류: '+e.message); }
+}
+// ---- 목록 편집 (경품/카드/퀴즈/설문) ----
+const FIELDS = {
+  prizes: [['code','코드(영문)'],['sort','순서','number'],['name_en','이름 EN'],['name_uz','이름 UZ'],['image_url','이미지 경로'],['total','총 수량','number'],['remaining','남은 수량','number'],['active','사용','bool']],
+  cards:  [['sort','순서','number'],['title_en','제목 EN'],['title_uz','제목 UZ'],['body_en','본문 EN','text'],['body_uz','본문 UZ','text'],['image_url','이미지 경로'],['active','사용','bool']],
+  quiz:   [['sort','순서','number'],['question_en','질문 EN'],['question_uz','질문 UZ'],['options_en','보기 EN (줄바꿈 구분)','arr'],['options_uz','보기 UZ (줄바꿈 구분)','arr'],['answer_idx','정답 번호 (첫 보기=0)','number'],['active','사용','bool']],
+  survey: [['sort','순서','number'],['question_en','질문 EN'],['question_uz','질문 UZ'],['qtype','유형','qtype'],['options_en','보기 EN (줄바꿈 구분, 주관식은 비움)','arr'],['options_uz','보기 UZ (줄바꿈 구분)','arr'],['active','사용','bool']]
+};
+function renderList(tbl){
+  $('#list-'+tbl).innerHTML = D[tbl].map(r => itemHtml(tbl, r)).join('');
+}
+function itemHtml(tbl, r){
+  const id = r.id || 'new' + Math.random().toString(36).slice(2,7);
+  return `<div class="item" data-tbl="${tbl}" data-id="${r.id||''}" id="it-${id}"><div class="hd"><b>${r.id ? '#'+r.id : '새 항목'} ${esc(r.name_en||r.title_en||r.question_en||'')}</b>
+    <span><button onclick="saveRow('${id}')">저장</button> ${r.id?`<button class="danger" onclick="delRow('${id}')">삭제</button>`:''}</span></div><div class="three">` +
+    FIELDS[tbl].map(([k,label,type]) => {
+      const v = r[k];
+      let inp;
+      if (type==='bool') inp = `<select data-k="${k}" data-t="bool"><option value="true" ${v!==false?'selected':''}>예</option><option value="false" ${v===false?'selected':''}>아니오</option></select>`;
+      else if (type==='qtype') inp = `<select data-k="${k}"><option value="single" ${v!=='text'?'selected':''}>객관식</option><option value="text" ${v==='text'?'selected':''}>주관식</option></select>`;
+      else if (type==='arr') inp = `<textarea data-k="${k}" data-t="arr">${esc((v||[]).join('\n'))}</textarea>`;
+      else if (type==='text') inp = `<textarea data-k="${k}">${esc(v)}</textarea>`;
+      else inp = `<input data-k="${k}" ${type==='number'?'type="number"':''} value="${esc(v)}">`;
+      return `<div ${type==='text'||type==='arr'?'style="grid-column:span 3"':''}><label>${label}</label>${inp}</div>`;
+    }).join('') + `</div></div>`;
+}
+function addRow(tbl){ $('#list-'+tbl).insertAdjacentHTML('beforeend', itemHtml(tbl, {})); window.scrollTo(0, document.body.scrollHeight); }
+async function saveRow(id){
+  const el = $('#it-'+id), tbl = el.dataset.tbl, row = {}; if (el.dataset.id) row.id = +el.dataset.id;
+  el.querySelectorAll('[data-k]').forEach(i => { const k=i.dataset.k; let v=i.value;
+    if (i.dataset.t==='bool') v = v==='true'; else if (i.dataset.t==='arr') v = v.split('\n').map(s=>s.trim()).filter(Boolean); else if (i.type==='number') v = v===''?null:+v;
+    row[k]=v; });
+  try { await rpc('uz_admin_upsert', { p_table: tbl, p_row: row }); toast('저장됨'); await load(); } catch(e){ toast('오류: '+e.message); }
+}
+async function delRow(id){
+  const el = $('#it-'+id); if (!confirm('삭제할까요?')) return;
+  try { await rpc('uz_admin_delete', { p_table: el.dataset.tbl, p_id: +el.dataset.id }); toast('삭제됨'); await load(); } catch(e){ toast('오류: '+e.message); }
+}
+// ---- 도구 ----
+async function exportCsv(){
+  try { const rows = await rpc('uz_admin_export'); if (!rows.length) return toast('데이터 없음');
+    const cols = Object.keys(rows[0]); const csv = '﻿' + [cols.join(','), ...rows.map(r=>cols.map(c=>`"${String(r[c]==null?'':r[c]).replace(/"/g,'""')}"`).join(','))].join('\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download = 'uz_survey_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+  } catch(e){ toast('오류: '+e.message); }
+}
+async function release(){ const v=$('#rel-id').value.trim(); if (v.length<6) return toast('ID 8자리를 입력'); try { const r = await rpc('uz_admin_release', { p_token_prefix: v }); toast(r.deleted+'건 삭제'); load(); } catch(e){ toast('오류: '+e.message); } }
+async function resetAll(){ try { await rpc('uz_admin_reset', { p_confirm: $('#reset-confirm').value.trim() }); toast('초기화 완료'); $('#reset-confirm').value=''; load(); } catch(e){ toast('오류: '+e.message); } }
+</script>
+</body>
+</html>
